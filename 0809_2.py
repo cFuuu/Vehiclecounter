@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 
 # 影片輸入路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_6.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_5.mp4" 
 
 # 輸出影片路徑 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
