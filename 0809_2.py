@@ -17,6 +17,7 @@ class Vehicle:
 
     def update_position(self, new_position):
         self.positions.append(new_position)
+        
 
     def get_average_position(self):
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
@@ -30,7 +31,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
         {"coords": [800, 525, 1050, 560], "color": (0, 255, 255), "count": 0},  # 黃色區間
         {"coords": [1000, 450, 1200, 480], "color": (0, 165, 255), "count": 0},  # 橙色區間
     ]
-    
+        
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print("無法開啟影片")
@@ -135,7 +136,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
         if cv2.waitKey(30) & 0xFF == 27:  # 按ESC退出
             break
 
-    cap.release()  
+    cap.release()  # 釋放 相機資源
     out.release()  # 釋放 VideoWriter 資源
     cv2.destroyAllWindows()
     
@@ -146,4 +147,5 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
 zone_counts, total_count = vehicle_count(video_path, output_path)
 for i, count in enumerate(zone_counts):
     print(f"Zone {i+1} vehicle count: {count}")
+    
 print(f"Total vehicle count: {total_count}")
