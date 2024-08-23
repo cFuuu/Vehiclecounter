@@ -8,22 +8,66 @@ video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_5.mp4"
 # 輸出影片路徑 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
+def get_vehicle_center(contour, method='both'):
+    M = cv2.moments(contour)
+    if M["m00"] != 0:
+        cx_contour = int(M["m10"] / M["m00"])
+        cy_contour = int(M["m01"] / M["m00"])
+    else:
+        cx_contour, cy_contour = 0, 0
+    
+    x, y, w, h = cv2.boundingRect(contour)
+    cx_bbox, cy_bbox = int(x + w/2), int(y + h/2)
+    
+    if method == 'both':
+        return (int((cx_contour + cx_bbox) / 2), int((cy_contour + cy_bbox) / 2))
+    elif method == 'contour':
+        return (cx_contour, cy_contour)
+    else:  # bounding box
+        return (cx_bbox, cy_bbox)
+
+
 
 class Vehicle:
     def __init__(self, position):
         self.positions = deque(maxlen=3)  # 保存最近3個位置
         self.update_position(position)
         self.counted = set()  # 用集合記錄已經被計數的區間
+        self.direction = None
 
     def update_position(self, new_position):
-        self.positions.append(new_position)
+         if self.positions:
+            old_pos = self.positions[-1]
+            dx = new_position[0] - old_pos[0]
+            dy = new_position[1] - old_pos[1]
+            distance = (dx**2 + dy**2)**0.5
+            if distance > 5:  # 避免小的抖動影響方向判斷
+                self.direction = (dx/distance, dy/distance)
+            self.positions.append(new_position)
         
 
     def get_average_position(self):
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 output_path 參數 
+    def adjust_position(self, frame_height, frame_width):
+        if not self.direction:
+            return self.get_average_position()
+
+        avg_pos = self.get_average_position()
+        # 根據方向調整位置
+        adjustment = 50  # 調整的像素數，可以根據需要修改
+        new_x = avg_pos[0] + int(self.direction[0] * adjustment)
+        new_y = avg_pos[1] + int(self.direction[1] * adjustment)
+
+        # 確保調整後的位置在畫面內
+        new_x = max(0, min(new_x, frame_width - 1))
+        new_y = max(0, min(new_y, frame_height - 1))
+
+        return (new_x, new_y)
+
+
+def vehicle_count(video_path, output_path, output_mode='original', center_method='both'):  # 新增 output_path 參數 
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
         {"coords": [250, 520, 530, 540], "color": (255, 0, 0), "count": 0},   # 藍色區間
@@ -54,14 +98,11 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
     elif output_mode == 'binary':
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height), isColor=False)
 
-
     # 背景減法
-    background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
+    background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)  
     
-    vehicles = {}
-
-    # 添加總計數變量     
-    total_count = 0
+    vehicles = {} 
+    total_count = 0  # 添加總計數變量
 
     while True:
         ret, frame = cap.read()
@@ -81,33 +122,43 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
         
         current_vehicles = set()
         
-        for contour in contours:
-            if cv2.contourArea(contour) > 2500: # 閥值調整
-                M = cv2.moments(contour)
-                if M["m00"] != 0:
-                    cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-                    vehicle_id = hash((cx, cy))
-                    
-                    if vehicle_id not in vehicles:
-                        vehicles[vehicle_id] = Vehicle((cx, cy))
-                    else:
-                        vehicles[vehicle_id].update_position((cx, cy))
-                    
-                    current_vehicles.add(vehicle_id)
-                    
-                    avg_pos = vehicles[vehicle_id].get_average_position()
+        ### 修改部分成"邊界框中心"定義 ###
 
-                    for i, zone in enumerate(detection_zones):
-                        if (zone["coords"][0] <= avg_pos[0] <= zone["coords"][2] and 
-                            zone["coords"][1] <= avg_pos[1] <= zone["coords"][3] and 
-                            i not in vehicles[vehicle_id].counted):
-                            zone["count"] += 1
-                            vehicles[vehicle_id].counted.add(i)
-                            
-                            # 更新總計數
-                            total_count += 1
-                    
-                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
+        for contour in contours:
+            if cv2.contourArea(contour) > 2500:  # 閥值調整
+                cx, cy = get_vehicle_center(contour, method=center_method)
+                vehicle_id = hash((cx, cy))
+                
+                if vehicle_id not in vehicles:
+                    vehicles[vehicle_id] = Vehicle((cx, cy))
+                else:
+                    vehicles[vehicle_id].update_position((cx, cy))
+                
+                current_vehicles.add(vehicle_id)
+                
+                adjusted_pos = vehicles[vehicle_id].adjust_position(frame_height, frame_width)
+                
+                for i, zone in enumerate(detection_zones):
+                    if (zone["coords"][0] <= adjusted_pos[0] <= zone["coords"][2] and 
+                        zone["coords"][1] <= adjusted_pos[1] <= zone["coords"][3] and 
+                        i not in vehicles[vehicle_id].counted):
+                        zone["count"] += 1
+                        vehicles[vehicle_id].counted.add(i)
+                        total_count += 1
+                
+                # 繪製原始位置和調整後的位置
+                avg_pos = vehicles[vehicle_id].get_average_position()
+                cv2.circle(frame, avg_pos, 5, (0, 255, 0), -1)
+                cv2.circle(frame, adjusted_pos, 5, (0, 0, 255), -1)
+                if vehicles[vehicle_id].direction:
+                    end_point = (int(adjusted_pos[0] + vehicles[vehicle_id].direction[0]*30),
+                                 int(adjusted_pos[1] + vehicles[vehicle_id].direction[1]*30))
+                    cv2.arrowedLine(frame, adjusted_pos, end_point, (255, 0, 0), 2)
+
+                # 繪製邊界矩形
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 255), 2)
+
         
         # 移除不再出現的車輛
         vehicles = {k: v for k, v in vehicles.items () if k in current_vehicles}
@@ -144,7 +195,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
 
 # 使用示例
 
-zone_counts, total_count = vehicle_count(video_path, output_path)
+zone_counts, total_count = vehicle_count(video_path, output_path, center_method='both')
 for i, count in enumerate(zone_counts):
     print(f"Zone {i+1} vehicle count: {count}")
     
