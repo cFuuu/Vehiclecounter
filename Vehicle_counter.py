@@ -33,10 +33,11 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
-        {"coords": [250, 560, 530, 600], "color": (255, 0, 0), "count": 0},   # 藍色區間
-        {"coords": [530, 540, 790, 590], "color": (0, 255, 102), "count": 0},  # 綠色區間
-        {"coords": [790, 530, 1050, 590], "color": (0, 255, 255), "count": 0},  # 黃色區間
-        {"coords": [980, 440, 1200, 480], "color": (0, 165, 255), "count": 0},  # 橙色區間
+        {"coords": [250, 560, 1280, 600], "color": (125, 0, 255), "count": 0},  # 單一偵測區間
+        #{"coords": [250, 560, 530, 600], "color": (255, 0, 0), "count": 0},   # 藍色區間
+        #{"coords": [530, 540, 790, 590], "color": (0, 255, 102), "count": 0},  # 綠色區間
+        #{"coords": [790, 530, 1050, 590], "color": (0, 255, 255), "count": 0},  # 黃色區間
+        #{"coords": [980, 440, 1200, 480], "color": (0, 165, 255), "count": 0},  # 橙色區間
     ]
         
     cap = cv2.VideoCapture(video_path)
@@ -138,9 +139,10 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                                 zone_recent_vehicles[i][vehicle_id] = current_time
                     
                     cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
+                    
                     # 在車輛旁邊顯示ID
-                    cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)    
+                    #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
+                    #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)   
 
         # 清理舊的車輛記錄
         for i, zone_vehicles in enumerate(zone_recent_vehicles):
