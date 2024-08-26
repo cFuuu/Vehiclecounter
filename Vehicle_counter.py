@@ -15,7 +15,7 @@ class Vehicle:
         global next_vehicle_id
         self.id = next_vehicle_id  # 唯一識別ID
         next_vehicle_id += 1
-        self.positions = deque(maxlen=10) # 保存最近10個位置
+        self.positions = deque(maxlen=5) # 保存最近10個位置
         self.update_position(position)
         self.counted = set()  # 用集合記錄已經被計數的區間
         self.last_count_time = {}  # 記錄每個區域的最後計數時間
@@ -33,10 +33,10 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
-        {"coords": [250, 500, 530, 550], "color": (255, 0, 0), "count": 0},   # 藍色區間
-        {"coords": [525, 540, 800, 580], "color": (0, 255, 102), "count": 0},  # 綠色區間
-        {"coords": [800, 525, 1050, 560], "color": (0, 255, 255), "count": 0},  # 黃色區間
-        {"coords": [1000, 450, 1200, 480], "color": (0, 165, 255), "count": 0},  # 橙色區間
+        {"coords": [250, 560, 530, 600], "color": (255, 0, 0), "count": 0},   # 藍色區間
+        {"coords": [530, 540, 790, 590], "color": (0, 255, 102), "count": 0},  # 綠色區間
+        {"coords": [790, 530, 1050, 590], "color": (0, 255, 255), "count": 0},  # 黃色區間
+        {"coords": [980, 440, 1200, 480], "color": (0, 165, 255), "count": 0},  # 橙色區間
     ]
         
     cap = cv2.VideoCapture(video_path)
@@ -92,7 +92,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         current_time = time.time()  # 獲取當前時間
         
         for contour in contours:
-            if cv2.contourArea(contour) > 2500:  # 閾值調整
+            if cv2.contourArea(contour) > 1000:  # 閾值調整
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
