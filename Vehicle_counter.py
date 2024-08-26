@@ -170,10 +170,11 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         elif output_mode == 'binary':
             out.write(thresh)
 
+        # 預覽視窗大小調整
         #newframe = cv2.resize(frame, (1280, 720))
-        newframe = cv2.resize(frame, dsize=None, fx= 0.9, fy= 0.9, interpolation=None)
-        cv2.imshow("Vehicle Counting", newframe)
+        newframe = cv2.resize(frame, dsize=None, fx= 0.6, fy= 0.6, interpolation=None)
 
+        cv2.imshow("Vehicle Counting", newframe)
         out.write(frame)  # 將處理後的每一幀寫入輸出影片
         
         if cv2.waitKey(30) & 0xFF == 27:  # 按ESC退出
