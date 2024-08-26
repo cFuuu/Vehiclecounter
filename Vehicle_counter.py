@@ -3,13 +3,11 @@ import numpy as np
 from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
-# 影片輸入路徑
+# 影片輸入與輸出的路徑
 video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_5.mp4" 
-
-# 輸出影片路徑 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
-# 新增: 全局變量，用於生成唯一ID
+# 全局變量，用於生成唯一ID
 next_vehicle_id = 0
 
 class Vehicle:
@@ -17,19 +15,22 @@ class Vehicle:
         global next_vehicle_id
         self.id = next_vehicle_id  # 唯一識別ID
         next_vehicle_id += 1
-        self.positions = deque(maxlen=3) # 保存最近3個位置
+        self.positions = deque(maxlen=10) # 保存最近10個位置
         self.update_position(position)
         self.counted = set()  # 用集合記錄已經被計數的區間
         self.last_count_time = {}  # 記錄每個區域的最後計數時間
+        self.last_seen = time.time()
 
     def update_position(self, new_position):
         self.positions.append(new_position)
+        self.last_seen = time.time()
 
     def get_average_position(self):
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 output_path 參數 
+def vehicle_count(video_path, output_path, output_mode='original'):
+    
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
         {"coords": [250, 500, 530, 550], "color": (255, 0, 0), "count": 0},   # 藍色區間
@@ -65,12 +66,11 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
     background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
     
     vehicles = {}
+    total_count = 0  # 添加總計數變量
 
-    # 添加總計數變量     
-    total_count = 0
-
-    # 新增: 冷卻時間（秒）
-    cooldown_time = 3
+    cooldown_time = 2  # 冷卻時間（秒）
+    time_window = 1  # 1秒內認為是同一輛車  
+    zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
 
     while True:
         ret, frame = cap.read()
@@ -100,7 +100,8 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
 
                     # 新增: 查找最近的現有車輛
                     for v_id, vehicle in vehicles.items():
-                        if np.linalg.norm(np.array(vehicle.get_average_position()) - np.array((cx, cy))) < 50:  # 50是閾值，可以根據需要調整
+                        if np.linalg.norm(np.array(vehicle.get_average_position()) - np.array((cx, cy))) < 100 and \
+                           current_time - vehicle.last_seen < time_window:
                             vehicle_id = v_id
                             break
 
@@ -116,22 +117,36 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
 
                     for i, zone in enumerate(detection_zones):
                         if (zone["coords"][0] <= avg_pos[0] <= zone["coords"][2] and 
-                            zone["coords"][1] <= avg_pos[1] <= zone["coords"][3] and 
-                            i not in vehicles[vehicle_id].counted):
-                            # 新增: 檢查冷卻時間
-                            if i not in vehicles[vehicle_id].last_count_time or \
-                               current_time - vehicles[vehicle_id].last_count_time[i] > cooldown_time:
-                                zone["count"] += 1
-                                vehicles[vehicle_id].counted.add(i)
-                                vehicles[vehicle_id].last_count_time[i] = current_time
-                                total_count += 1  # 更新總計數
+                            zone["coords"][1] <= avg_pos[1] <= zone["coords"][3]):
+                            
+                            # 新增: 檢查該區域最近檢測到的車輛
+                            if vehicle_id not in zone_recent_vehicles[i]:
+                                # 新車輛進入區域
+                                zone_recent_vehicles[i][vehicle_id] = current_time
+                                if i not in vehicles[vehicle_id].counted:
+
+                                    # 新增: 檢查冷卻時間
+                                    if i not in vehicles[vehicle_id].last_count_time or \
+                                    current_time - vehicles[vehicle_id].last_count_time[i] > cooldown_time:
+                                        zone["count"] += 1
+                                        vehicles[vehicle_id].counted.add(i)
+                                        vehicles[vehicle_id].last_count_time[i] = current_time
+                                        total_count += 1  # 更新總計數
+
+                            else:
+                                # 更新最後看到的時間
+                                zone_recent_vehicles[i][vehicle_id] = current_time
                     
                     cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
                     # 新增: 在車輛旁邊顯示ID
                     cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)        
-        
 
+        # 清理舊的車輛記錄
+        for i, zone_vehicles in enumerate(zone_recent_vehicles):
+            zone_recent_vehicles[i] = {v_id: last_seen for v_id, last_seen in zone_vehicles.items() 
+                                       if current_time - last_seen < time_window}
+        
         # 移除不再出現的車輛
         vehicles = {k: v for k, v in vehicles.items () if k in current_vehicles}
         
