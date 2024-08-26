@@ -138,9 +138,9 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                                 zone_recent_vehicles[i][vehicle_id] = current_time
                     
                     cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
-                    # 新增: 在車輛旁邊顯示ID
+                    # 在車輛旁邊顯示ID
                     cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)        
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)    
 
         # 清理舊的車輛記錄
         for i, zone_vehicles in enumerate(zone_recent_vehicles):
