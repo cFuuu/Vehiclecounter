@@ -1,6 +1,6 @@
 import cv2
 
-#查看影像任意點位的座標
+# 查看影像任意點位的座標
 
 # 回調函數，當滑鼠事件發生時被調用
 def click_event(event, x, y, flags, param):

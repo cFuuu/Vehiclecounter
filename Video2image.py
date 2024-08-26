@@ -1,13 +1,13 @@
 import os
-os.add_dll_directory("C://Users/mason/anaconda3//Library//bin") # 一定要加，不然虛擬環境讀不到。
+os.add_dll_directory("C:/Users/mason/anaconda3//Library/bin") # 一定要加，不然虛擬環境讀不到。
 import cv2
 import numpy as np
 
 interval = 1
 frame_count = 0
 frame_index = 0
-inputvideo = "D:\\Harry\\ITS\\Vehiclecounter\\Video\\20240807\\test_3.mp4"
-outputvideo = "D:\\Harry\\ITS\\Vehiclecounter\\Image\\%d.jpg"
+inputvideo = "D:/Harry/ITS/Vehiclecounter/Video/20240807/test_3.mp4"
+outputvideo = "D:/Harry/ITS/Vehiclecounter/Image/%d.jpg"
 
 cap = cv2.VideoCapture(inputvideo)
 if cap.isOpened():
