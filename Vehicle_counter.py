@@ -105,7 +105,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):  # 新增 ou
                             vehicles[vehicle_id].counted.add(i)
                             
                             # 更新總計數
-                            total_count += 1
+                            total_count += 1    
                     
                     cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
         
