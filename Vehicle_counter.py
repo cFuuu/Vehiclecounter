@@ -68,8 +68,9 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     vehicles = {}
     total_count = 0  # 添加總計數變量
 
-    cooldown_time = 2  # 冷卻時間（秒）
-    time_window = 1  # 1秒內認為是同一輛車  
+    cooldown_time = 2  # 冷卻時間 (秒)
+    time_window = 1  # 1秒內認為是同一輛車
+
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
 
     while True:
@@ -137,34 +138,37 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                                 # 更新最後看到的時間
                                 zone_recent_vehicles[i][vehicle_id] = current_time
                     
-                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) # 顯示車輛輪廓中心
+                    #######################################################
+                    # 顯示車輛輪廓中心
+                    #cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
                     
                     # 在車輛旁邊顯示ID
                     #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
                     #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    #######################################################
 
         # 清理舊的車輛記錄
         for i, zone_vehicles in enumerate(zone_recent_vehicles):
-            zone_recent_vehicles[i] = {
-            v_id: last_seen for v_id, last_seen in zone_vehicles.items() 
-            if current_time - last_seen < time_window
-            }
+            zone_recent_vehicles[i] = { v_id: last_seen for v_id, last_seen in zone_vehicles.items() 
+            if current_time - last_seen < time_window }
         
         # 移除不再出現的車輛
         vehicles = {k: v for k, v in vehicles.items () if k in current_vehicles}
         
-        # 繪製所有偵測區間和計數
-        for i, zone in enumerate(detection_zones):
-            cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
-                          (zone["coords"][2], zone["coords"][3]), zone["color"], 2)
-            cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
+        ##############################################
+        # 繪製所有偵測區間與區間計數
+        #for i, zone in enumerate(detection_zones):
+            #cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
+                          #(zone["coords"][2], zone["coords"][3]), zone["color"], 2)
+            #cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
+                        #cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
+        ##############################################
         
         # 左上顯示總計數
         cv2.putText(frame, f"Total Vehicle Count: {total_count}", (10, 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
-        # 根據選擇的模式來寫入影片 
+        # 根據選擇的模式來寫入影片(原始圖、二值化) 
         if output_mode == 'original':
             out.write(frame)
         elif output_mode == 'binary':
