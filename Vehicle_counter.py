@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_11.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_5.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -33,9 +33,9 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
-        {"coords": [245, 560, 530, 600], "color": (255, 0, 0), "count": 0},     # 1 藍色區間
+        {"coords": [240, 580, 530, 620], "color": (255, 0, 0), "count": 0},     # 1 藍色區間
         {"coords": [530, 540, 790, 590], "color": (0, 255, 102), "count": 0},   # 2 綠色區間
-        {"coords": [790, 540, 1050, 590], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [790, 520, 1050, 570], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
         {"coords": [1020, 475, 1250, 520], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
     ]
         
@@ -92,7 +92,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         current_time = time.time()  # 獲取當前時間
         
         for contour in contours:
-            if cv2.contourArea(contour) > 1000:  # 閾值調整
+            if cv2.contourArea(contour) > 1500:  # 閾值調整
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
@@ -119,13 +119,13 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                         if (zone["coords"][0] <= avg_pos[0] <= zone["coords"][2] and 
                             zone["coords"][1] <= avg_pos[1] <= zone["coords"][3]):
                             
-                            # 新增: 檢查該區域最近檢測到的車輛
+                            # 檢查該區域最近檢測到的車輛
                             if vehicle_id not in zone_recent_vehicles[i]:
                                 # 新車輛進入區域
                                 zone_recent_vehicles[i][vehicle_id] = current_time
                                 if i not in vehicles[vehicle_id].counted:
 
-                                    # 新增: 檢查冷卻時間
+                                    # 檢查冷卻時間
                                     if i not in vehicles[vehicle_id].last_count_time or \
                                     current_time - vehicles[vehicle_id].last_count_time[i] > cooldown_time:
                                         zone["count"] += 1
@@ -137,7 +137,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                                 # 更新最後看到的時間
                                 zone_recent_vehicles[i][vehicle_id] = current_time
                     
-                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1)
+                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) # 顯示車輛輪廓中心
                     
                     # 在車輛旁邊顯示ID
                     #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
