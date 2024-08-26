@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/test_5.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/test1/test_5.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -140,7 +140,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                     
                     #######################################################
                     # 顯示車輛輪廓中心
-                    #cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
+                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
                     
                     # 在車輛旁邊顯示ID
                     #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
@@ -157,11 +157,11 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         
         ##############################################
         # 繪製所有偵測區間與區間計數
-        #for i, zone in enumerate(detection_zones):
-            #cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
-                          #(zone["coords"][2], zone["coords"][3]), zone["color"], 2)
-            #cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
-                        #cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
+        for i, zone in enumerate(detection_zones):
+            cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
+                          (zone["coords"][2], zone["coords"][3]), zone["color"], 2)
+            cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
         ##############################################
         
         # 左上顯示總計數
@@ -175,8 +175,8 @@ def vehicle_count(video_path, output_path, output_mode='original'):
             out.write(thresh)
 
         # 預覽視窗大小調整
-        #newframe = cv2.resize(frame, (1280, 720))
-        newframe = cv2.resize(frame, dsize=None, fx= 0.6, fy= 0.6, interpolation=None)
+        newframe = cv2.resize(frame, (1280, 720))
+        #newframe = cv2.resize(frame, dsize=None, fx= 0.6, fy= 0.6, interpolation=None)
 
         cv2.imshow("Vehicle Counting", newframe)
         out.write(frame)  # 將處理後的每一幀寫入輸出影片
