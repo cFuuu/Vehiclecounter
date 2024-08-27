@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/test1/test_5.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_1.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -32,7 +32,7 @@ class Vehicle:
         global next_vehicle_id
         self.id = next_vehicle_id  # 唯一識別ID
         next_vehicle_id += 1
-        self.positions = deque(maxlen=5) # 保存最近10個位置
+        self.positions = deque(maxlen=10) # 保存最近10個位置
         self.update_position(position)
         self.counted = set()  # 用集合記錄已經被計數的區間
         self.last_count_time = {}  # 記錄每個區域的最後計數時間
@@ -46,14 +46,14 @@ class Vehicle:
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='original'):
+def vehicle_count(video_path, output_path, output_mode='binary'):
     
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
-        {"coords": [(267, 561), (198, 649), (527, 644), (529, 562)], "color": (255, 0, 0), "count": 0},       # 藍色區間
-        {"coords": [(538, 507), (528, 591), (806, 589), (776, 508)], "color": (0, 255, 102), "count": 0},     # 綠色區間
-        {"coords": [(765, 483), (795, 561), (1079, 566), (991, 480)], "color": (0, 255, 255), "count": 0},   # 黃色區間
-        {"coords": [(985, 472), (1047, 531), (1242, 495), (1183, 451)], "color": (0, 165, 255), "count": 0}, # 橙色區間
+        {"coords": [(172, 638),(467, 602),(497, 660),(170, 708)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
+        {"coords": [(453, 572),(676, 534),(749, 616),(494, 658)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
+        {"coords": [(648, 497),(847, 469),(907, 522),(702, 563)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [(774, 420),(957, 386),(1036, 431),(860, 485)], "color": (0, 165, 255), "count": 0}, # 4 橙色區間
         ]
         
     cap = cv2.VideoCapture(video_path)
@@ -110,7 +110,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         current_time = time.time()  # 獲取當前時間
         
         for contour in contours:
-            if cv2.contourArea(contour) > 1500:  # 閾值調整
+            if cv2.contourArea(contour) > 3000:  # 閾值調整
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
@@ -155,8 +155,8 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                     cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
                     
                     # 在車輛旁邊顯示ID
-                    #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
-                    #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                     #######################################################
 
         # 清理舊的車輛記錄

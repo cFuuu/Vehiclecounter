@@ -25,13 +25,13 @@ def click_event(event, x, y, flags, param):
         cv2.putText(img, coord_text, (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 200, 255), 2)
 
         # 點擊順序和座標
-        print(f"No. {click_count}: ({x}, {y})")
+        print(f"No. {click_count}: ({x}, {y}),")
 
         # 更新顯示的圖片
         cv2.imshow('image', img)
 
 # 載入圖片
-img = cv2.imread('D:\\Harry\\ITS\\Vehiclecounter\\Image\\20240807_1\\0.jpg')
+img = cv2.imread('D:/Harry/ITS/Vehiclecounter/Image/Shulin/0.jpg')
 # 顯示圖片
 cv2.imshow('image', img)
 # 註冊滑鼠回調函數

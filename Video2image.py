@@ -6,7 +6,7 @@ import numpy as np
 interval = 1
 frame_count = 0
 frame_index = 0
-inputvideo = "D:/Harry/ITS/Vehiclecounter/Video/20240807/test_3.mp4"
+inputvideo = "D:/Harry/ITS/Vehiclecounter/Video/image.mp4"
 outputvideo = "D:/Harry/ITS/Vehiclecounter/Image/%d.jpg"
 
 cap = cv2.VideoCapture(inputvideo)
