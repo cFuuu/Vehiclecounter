@@ -50,14 +50,10 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [x1, y1, x2, y2]
     detection_zones = [
-        #{"coords": [240, 580, 530, 620], "color": (255, 0, 0), "count": 0},     # 1 藍色區間
-        #{"coords": [530, 540, 790, 590], "color": (0, 255, 102), "count": 0},   # 2 綠色區間
-        #{"coords": [790, 520, 1050, 570], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
-        #{"coords": [1020, 475, 1250, 520], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
-        {"coords": [(250, 520), (530, 540), (530, 560), (250, 540)], "color": (255, 0, 0), "count": 0},       # 藍色區間
-        {"coords": [(525, 540), (800, 570), (800, 590), (525, 560)], "color": (0, 255, 102), "count": 0},     # 綠色區間
-        {"coords": [(800, 525), (1050, 560), (1050, 580), (800, 545)], "color": (0, 255, 255), "count": 0},   # 黃色區間
-        {"coords": [(1000, 450), (1200, 480), (1200, 500), (1000, 470)], "color": (0, 165, 255), "count": 0}, # 橙色區間
+        {"coords": [(267, 561), (198, 649), (527, 644), (529, 562)], "color": (255, 0, 0), "count": 0},       # 藍色區間
+        {"coords": [(538, 507), (528, 591), (806, 589), (776, 508)], "color": (0, 255, 102), "count": 0},     # 綠色區間
+        {"coords": [(765, 483), (795, 561), (1079, 566), (991, 480)], "color": (0, 255, 255), "count": 0},   # 黃色區間
+        {"coords": [(985, 472), (1047, 531), (1242, 495), (1183, 451)], "color": (0, 165, 255), "count": 0}, # 橙色區間
         ]
         
     cap = cv2.VideoCapture(video_path)
@@ -185,7 +181,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
             pts = pts.reshape((-1, 1, 2))
             cv2.polylines(frame, [pts], True, zone["color"], 2)
             cv2.putText(frame, f"Count: {zone['count']}", 
-                        (zone["coords"][0][0], zone["coords"][0][1] - 10), 
+                        (zone["coords"][0][0] +5, zone["coords"][0][1] - 15), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
         ##############################################
         
