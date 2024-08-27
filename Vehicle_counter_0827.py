@@ -70,6 +70,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
     vehicles = {}
     total_count = 0
+    vehicle_id = 0 # 用於生成唯一車輛ID
 
     while True:
         ret, frame = cap.read()

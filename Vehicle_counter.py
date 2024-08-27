@@ -7,9 +7,6 @@ import time  # 用於實現冷卻時間功能
 video_path = "D:/Harry/ITS/Vehiclecounter/Video/test1/test_5.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
-# 全局變量，用於生成唯一ID
-next_vehicle_id = 0
-
 # 新增: 檢查點是否在多邊形內的函數
 def point_in_polygon(point, polygon):
     x, y = point
@@ -26,6 +23,8 @@ def point_in_polygon(point, polygon):
                     inside = not inside
         p1x, p1y = p2x, p2y
     return inside
+
+next_vehicle_id = 0 # 用於生成唯一車輛ID
 
 class Vehicle:
     def __init__(self, position):
@@ -128,25 +127,32 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         current_vehicles = set()
-                
+        
         for contour in contours:
             if cv2.contourArea(contour) > 1500:  # 閾值調整
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-                    vehicle_id = hash((cx, cy))
-
-                    # 新增: 查找最近的現有車輛
+                    
+                    # 尋找最近的現有車輛
+                    closest_vehicle_id = None
+                    min_distance = float('inf')
                     for v_id, vehicle in vehicles.items():
-                        if np.linalg.norm(np.array(vehicle.get_average_position()) - np.array((cx, cy))) < 100 and \
-                           current_time - vehicle.last_seen < time_window:
-                            vehicle_id = v_id
-                            break
+                        last_pos = vehicle.get_average_position()
+                        if last_pos:
+                            distance = np.linalg.norm(np.array([cx, cy]) - np.array(last_pos))
+                            if distance < min_distance and distance < 10:  # 50是閾值，可以根據需要調整
+                                min_distance = distance
+                                closest_vehicle_id = v_id
 
-                    if vehicle_id is None:
-                        vehicle_id = len(vehicles)
+                    if closest_vehicle_id is None:
+                        # 如果沒有找到近的車輛，創建新的
+                        vehicle_id = next_vehicle_id
+                        next_vehicle_id += 1
                         vehicles[vehicle_id] = Vehicle((cx, cy))
                     else:
+                        # 更新最近的車輛位置
+                        vehicle_id = closest_vehicle_id
                         vehicles[vehicle_id].update_position((cx, cy))
 
                     current_vehicles.add(vehicle_id)
@@ -175,8 +181,8 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                             cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
                             
                             # 在車輛旁邊顯示ID
-                            #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
-                            #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                            cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                             #######################################################
 
         # 清理舊的車輛記錄
