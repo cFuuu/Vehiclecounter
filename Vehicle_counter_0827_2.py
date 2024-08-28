@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 from collections import deque
-import time  # 新增: 用於實現冷卻時間功能
+import time  # 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_1.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_2.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -73,7 +73,7 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
     # 根據輸出模式決定輸出的影片
-    if output_mode == "original" :
+    if output_mode == "original":
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
     elif output_mode == "binary":
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height), isColor=False)
@@ -167,20 +167,20 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
         # 移除不再出現的車輛
         vehicles = {k: v for k, v in vehicles.items () if k in current_vehicles}
         
-        ##############################################
-        # 繪製所有偵測區間與區間計數
+        ###########  繪製偵測區間   ###################
+        # 正交方框
         #for i, zone in enumerate(detection_zones):
             #cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
                           #(zone["coords"][2], zone["coords"][3]), zone["color"], 2)
             #cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
                         #cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)    
 
-        # 任意四點偵測區間繪製
+        # 任意四點
         for zone in detection_zones:
             pts = np.array(zone["coords"], np.int32)
             pts = pts.reshape((-1, 1, 2))
             cv2.polylines(frame, [pts], True, zone["color"], 2)
-            cv2.putText(frame, f"Count: {zone['count']}", 
+            cv2.putText(frame, f"Count: {zone['count']}",
                         (zone["coords"][0][0] +5, zone["coords"][0][1] - 15), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)
         ##############################################
@@ -189,7 +189,7 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
         cv2.putText(frame, f"Total Vehicle Count: {total_count}", (10, 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
-        # 根據選擇的模式來寫入影片(原始圖、二值化) 
+        # 根據選擇的模式來寫入影片(原始圖、二值化)
         if output_mode == 'original':
             out.write(frame)
         elif output_mode == 'binary':
