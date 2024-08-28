@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_1.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_2.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -46,13 +46,13 @@ class Vehicle:
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='binary'):
+def vehicle_count(video_path, output_path, output_mode='original'):
     
-    # 定義多個偵測區間 [x1, y1, x2, y2]
+    # 定義多個偵測區間 [1左上, 2左下, 3右下, 4右上]
     detection_zones = [
-        {"coords": [(172, 638),(467, 602),(497, 660),(170, 708)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
-        {"coords": [(453, 572),(676, 534),(749, 616),(494, 658)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
-        {"coords": [(648, 497),(847, 469),(907, 522),(702, 563)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [(0, 623),(0, 680),(491, 647),(459, 592)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
+        {"coords": [(459, 592),(491, 647),(940, 630),(876, 566)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
+        {"coords": [(777, 651),(832, 716),(1154, 716),(1057, 638)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
         {"coords": [(774, 420),(957, 386),(1036, 431),(860, 485)], "color": (0, 165, 255), "count": 0}, # 4 橙色區間
         ]
         
@@ -85,7 +85,7 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
     vehicles = {}
     total_count = 0  # 添加總計數變量
 
-    cooldown_time = 2  # 冷卻時間 (秒)
+    cooldown_time = 1  # 冷卻時間 (秒)
     time_window = 1  # 1秒內認為是同一輛車
 
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
