@@ -2,13 +2,18 @@ import cv2
 
 # 初始化點擊次數
 click_count = 0
+ctrl_points = []
 
 # 回調函數，當滑鼠事件發生時被調用
 def click_event(event, x, y, flags, param):
-    global img, click_count
+    global img, click_count, ctrl_points
+
+    # 判斷是否按下了Ctrl鍵和左鍵
     if event == cv2.EVENT_LBUTTONDOWN:
-        # 更新點擊次數
-        click_count += 1
+        if flags & cv2.EVENT_FLAG_CTRLKEY:
+            # Ctrl 點擊邏輯
+            ctrl_points.append((x, y))
+            click_count += 1  # 更新點擊次數
         
         # 在點擊的位置繪製一個圓
         cv2.circle(img, (x, y), 3, (0, 0, 255), -1)
@@ -26,6 +31,12 @@ def click_event(event, x, y, flags, param):
 
         # 點擊順序和座標
         print(f"No. {click_count}: ({x}, {y}),")
+
+        # 如果按下 Ctrl 並標記了兩個點，繪製直線
+        if len(ctrl_points) == 2:
+            cv2.line(img, ctrl_points[0], ctrl_points[1], (0, 255, 0), 2)
+            ctrl_points = []  # 繪製完成後清空點位列表
+
 
         # 更新顯示的圖片
         cv2.imshow('image', img)

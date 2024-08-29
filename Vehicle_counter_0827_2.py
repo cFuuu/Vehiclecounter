@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_2.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_1.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -50,10 +50,12 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [1左上, 2左下, 3右下, 4右上]
     detection_zones = [
-        {"coords": [(0, 623),(0, 680),(491, 647),(459, 592)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
-        {"coords": [(459, 592),(491, 647),(940, 630),(876, 566)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
-        {"coords": [(777, 651),(832, 716),(1154, 716),(1057, 638)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
-        {"coords": [(774, 420),(957, 386),(1036, 431),(860, 485)], "color": (0, 165, 255), "count": 0}, # 4 橙色區間
+        {"coords": [(21, 343),(3, 423),(177, 406),(175, 335)], "color": (100, 100, 255), "count": 0},# 0 紅色區間(路肩)
+        
+        {"coords": [(175, 335),(177, 406),(364, 386),(334, 322)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
+        {"coords": [(334, 322),(364, 386),(575, 365),(526, 307)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
+        {"coords": [(526, 307),(575, 365),(741, 346),(678, 295)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [(678, 295),(741, 346),(903, 323),(828, 279)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
         ]
         
     cap = cv2.VideoCapture(video_path)
@@ -86,7 +88,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     total_count = 0  # 添加總計數變量
 
     cooldown_time = 1  # 冷卻時間 (秒)
-    time_window = 1  # 1秒內認為是同一輛車
+    time_window = 1   # __秒內認為是同一輛車
 
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
 
@@ -110,7 +112,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         current_time = time.time()  # 獲取當前時間
         
         for contour in contours:
-            if cv2.contourArea(contour) > 3000:  # 閾值調整
+            if cv2.contourArea(contour) > 1000:  # 閾值調整
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
@@ -119,7 +121,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
                     # 新增: 查找最近的現有車輛
                     for v_id, vehicle in vehicles.items():
                         if np.linalg.norm(np.array(vehicle.get_average_position()) - np.array((cx, cy))) < 100 and \
-                           current_time - vehicle.last_seen < time_window:
+                            current_time - vehicle.last_seen < time_window:
                             vehicle_id = v_id
                             break
 
@@ -167,14 +169,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         # 移除不再出現的車輛
         vehicles = {k: v for k, v in vehicles.items () if k in current_vehicles}
         
-        ##############################################
-        # 繪製所有偵測區間與區間計數
-        #for i, zone in enumerate(detection_zones):
-            #cv2.rectangle(frame, (zone["coords"][0], zone["coords"][1]), 
-                          #(zone["coords"][2], zone["coords"][3]), zone["color"], 2)
-            #cv2.putText(frame, f"Zone {i+1}: {zone['count']}", (zone["coords"][0], zone["coords"][1] - 10), 
-                        #cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)    
-
+        ########  繪製偵測區間 #####################################
         # 任意四點偵測區間繪製
         for zone in detection_zones:
             pts = np.array(zone["coords"], np.int32)
@@ -206,7 +201,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
             break
 
     cap.release()  # 釋放 相機資源
-    out.release()  # 釋放 VideoWriter 資源
+    out.release()  # 釋放 VideoWriter 資源 
     cv2.destroyAllWindows()
     
     return [zone["count"] for zone in detection_zones], total_count
