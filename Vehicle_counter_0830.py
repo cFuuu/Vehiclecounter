@@ -4,7 +4,7 @@ from collections import deque
 import time  # 新增: 用於實現冷卻時間功能
 
 # 影片輸入與輸出的路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_1.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_3.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"  
 
 # 全局變量，用於生成唯一ID
@@ -46,16 +46,16 @@ class Vehicle:
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='binary'):
+def vehicle_count(video_path, output_path, output_mode='original'):
     
     # 定義多個偵測區間 [1左上, 2左下, 3右下, 4右上]  # 第一點一定要在"左上"，且按照順序
     detection_zones = [
-        {"coords": [(0, 332),(0, 420),(172, 410),(173, 319)], "color": (100, 100, 255), "count": 0},# 0 紅色區間(路肩)
+        #{"coords": [(0, 332),(0, 420),(172, 410),(173, 319)], "color": (100, 100, 255), "count": 0},# 0 紅色區間(路肩)
         
-        {"coords": [(173, 319),(172, 410),(371, 389),(337, 306)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
-        {"coords": [(324, 278),(347, 353),(550, 326),(502, 266)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
-        {"coords": [(515, 291),(572, 363),(741, 346),(663, 279)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
-        {"coords": [(663, 279),(741, 346),(903, 323),(787, 260)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
+        {"coords": [(179, 273),(180, 336),(343, 321),(315, 262)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
+        {"coords": [(315, 262),(343, 321),(532, 302),(476, 249)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
+        {"coords": [(476, 249),(532, 302),(650, 289),(579, 242)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [(579, 242),(650, 289),(807, 272),(719, 226)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
         ]
         
     cap = cv2.VideoCapture(video_path)
@@ -100,7 +100,7 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
         # 使用高斯模糊減少雜訊
         blurred = cv2.GaussianBlur(frame, (5, 5), 0) 
         fg_mask = background_subtractor.apply(blurred)
-        _, thresh = cv2.threshold(fg_mask, 244, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
         
         # 形態學操作
         kernel = np.ones((5,5), np.uint8)
@@ -113,12 +113,18 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
         
         for contour in contours:
             if cv2.contourArea(contour) > 1000:  # 閾值調整
+                # 新增: 計算邊界框
+                #x, y, w, h = cv2.boundingRect(contour)
+                
+                # 修改: 使用邊界框的中心點
+                #cx, cy = x + w // 2, y + h // 2
+                
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
                     vehicle_id = None
 
-                    # 新增: 查找最近的現有車輛
+                    # 查找最近的現有車輛
                     for v_id, vehicle in vehicles.items():
                         if np.linalg.norm(np.array(vehicle.get_average_position()) - np.array((cx, cy))) < 100 and \
                             current_time - vehicle.last_seen < time_window:
@@ -153,8 +159,11 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
                                 zone_recent_vehicles[i][vehicle_id] = current_time                    
 
                     #######################################################
+                    # 顯示邊界框
+                    #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    
                     # 顯示車輛輪廓中心
-                    cv2.circle(frame, avg_pos, 5, (0, 0, 255), -1) 
+                    cv2.circle(frame, avg_pos, 5, (150, 0, 255), -1) 
                     
                     # 在車輛旁邊顯示ID
                     cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
@@ -191,11 +200,10 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
             out.write(thresh)
 
         # 預覽視窗大小調整
-        newframe = cv2.resize(frame, (1280, 720))
-        #newframe = cv2.resize(frame, dsize=None, fx= 0.6, fy= 0.6, interpolation=None)
+        frame = cv2.resize(frame, (1280, 720))
+        #frame = cv2.resize(frame, dsize=None, fx= 0.6, fy= 0.6, interpolation=None)
 
-        cv2.imshow("Vehicle Counting", newframe)
-        out.write(frame)  # 將處理後的每一幀寫入輸出影片
+        cv2.imshow("Vehicle Counting", frame)
         
         if cv2.waitKey(30) & 0xFF == 27:  # 按ESC退出
             break
