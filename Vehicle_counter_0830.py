@@ -4,7 +4,7 @@ from collections import deque
 import time
 
 # 影片輸入/輸出路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_3.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_5.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"
 
 
@@ -46,7 +46,20 @@ class Vehicle:
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
 
-def vehicle_count(video_path, output_path, output_mode='original'):
+# 新增：用於分割可能包含多輛車的大型邊界框的函數
+def split_large_bbox(x, y, w, h, max_ratio=0.5, min_width=50):
+    """
+    分割可能包含多輛車的大型邊界框
+    max_ratio: 最大允許的寬高比
+    min_width: 分割後的最小寬度
+    """
+    if w / h > max_ratio:
+        num_splits = int(w / h / max_ratio) + 1
+        split_width = max(w // num_splits, min_width)
+        return [(x + i * split_width, y, split_width, h) for i in range(num_splits)]
+    return [(x, y, w, h)]
+
+def vehicle_count(video_path, output_path, output_mode='binary'):
     
     # 定義偵測區間 [1左上, 2左下, 3右下, 4右上]  # 第一點一定要在"左上"，且按照順序
     detection_zones = [
@@ -77,7 +90,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     vehicles = {}
     total_count = 0  # 添加總計數變量
     cooldown_time = 0.5  # 冷卻時間 (秒)
-    time_window = 0.5   # __秒內認為是同一輛車
+    time_window = 0.4   # __秒內認為是同一輛車
     
     background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True) # 背景減法
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
@@ -104,10 +117,16 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         for contour in contours:
             if cv2.contourArea(contour) > 1000:  # 閾值調整
                 # 計算邊界框
-                #x, y, w, h = cv2.boundingRect(contour)
+                x, y, w, h = cv2.boundingRect(contour)
                 
+                # 新增：分割可能包含多輛車的大型邊界框
+                bboxes = split_large_bbox(x, y, w, h)
+                
+                for bbox in bboxes:
+                    x, y, w, h = bbox
+
                 # 使用邊界框的中心點
-                #cx, cy = x + w // 2, y + h // 2
+                cx, cy = x + w // 2, y + h // 2
                 
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
@@ -150,10 +169,10 @@ def vehicle_count(video_path, output_path, output_mode='original'):
 
                     ##########  車輛標記 ###################################
                     # 顯示邊界框
-                    #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
                     
                     # 顯示車輛輪廓中心
-                    #cv2.circle(frame, avg_pos, 5, (100, 0, 255), -1) 
+                    cv2.circle(frame, avg_pos, 5, (100, 0, 255), -1) 
                     
                     # 在車輛旁邊顯示ID
                     #cv2.putText(frame, f"ID: {vehicles[vehicle_id].id}", (avg_pos[0] + 10, avg_pos[1] - 10),
@@ -173,7 +192,7 @@ def vehicle_count(video_path, output_path, output_mode='original'):
         for zone in detection_zones:
             pts = np.array(zone["coords"], np.int32)
             pts = pts.reshape((-1, 1, 2))
-            #cv2.polylines(frame, [pts], True, zone["color"], 2)  # 偵測區域
+            cv2.polylines(frame, [pts], True, zone["color"], 2)  # 偵測區域
             cv2.putText(frame, f"Count: {zone['count']}",   # 單車道計數
                         (zone["coords"][0][0] +5, zone["coords"][0][1] - 15), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, zone["color"], 2)         
