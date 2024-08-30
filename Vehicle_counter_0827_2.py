@@ -46,16 +46,16 @@ class Vehicle:
         return (int(sum(x for x, y in self.positions) / len(self.positions)),
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
-def vehicle_count(video_path, output_path, output_mode='original'):
+def vehicle_count(video_path, output_path, output_mode='binary'):
     
-    # 定義多個偵測區間 [1左上, 2左下, 3右下, 4右上]
+    # 定義多個偵測區間 [1左上, 2左下, 3右下, 4右上]  # 第一點一定要在"左上"，且按照順序
     detection_zones = [
-        {"coords": [(21, 343),(3, 423),(177, 406),(175, 335)], "color": (100, 100, 255), "count": 0},# 0 紅色區間(路肩)
+        {"coords": [(0, 332),(0, 420),(172, 410),(173, 319)], "color": (100, 100, 255), "count": 0},# 0 紅色區間(路肩)
         
-        {"coords": [(175, 335),(177, 406),(364, 386),(334, 322)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
-        {"coords": [(334, 322),(364, 386),(575, 365),(526, 307)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
-        {"coords": [(526, 307),(575, 365),(741, 346),(678, 295)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
-        {"coords": [(678, 295),(741, 346),(903, 323),(828, 279)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
+        {"coords": [(173, 319),(172, 410),(371, 389),(337, 306)], "color": (255, 0, 0), "count": 0},    # 1 藍色區間
+        {"coords": [(324, 278),(347, 353),(550, 326),(502, 266)], "color": (0, 255, 102), "count": 0},  # 2 綠色區間
+        {"coords": [(515, 291),(572, 363),(741, 346),(663, 279)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
+        {"coords": [(663, 279),(741, 346),(903, 323),(787, 260)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
         ]
         
     cap = cv2.VideoCapture(video_path)
@@ -87,8 +87,8 @@ def vehicle_count(video_path, output_path, output_mode='original'):
     vehicles = {}
     total_count = 0  # 添加總計數變量
 
-    cooldown_time = 1  # 冷卻時間 (秒)
-    time_window = 1   # __秒內認為是同一輛車
+    cooldown_time = 0.5  # 冷卻時間 (秒)
+    time_window = 0.5   # __秒內認為是同一輛車
 
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
 

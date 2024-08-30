@@ -42,7 +42,7 @@ def click_event(event, x, y, flags, param):
         cv2.imshow('image', img)
 
 # 載入圖片
-img = cv2.imread('D:/Harry/ITS/Vehiclecounter/Image/Shulin/0.jpg')
+img = cv2.imread('D:/Harry/ITS/Vehiclecounter/Image/Shulin/15.jpg')
 # 顯示圖片
 cv2.imshow('image', img)
 # 註冊滑鼠回調函數
