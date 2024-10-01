@@ -2,42 +2,55 @@ import cv2
 import numpy as np
 from collections import deque
 import time
+from scipy.optimize import linear_sum_assignment  # 匈牙利演算法
 
 # 影片輸入/輸出路徑
-video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_5.mp4" 
+video_path = "D:/Harry/ITS/Vehiclecounter/Video/Shulin/Shulin_6.mp4" 
 output_path = "D:/Harry/ITS/Vehiclecounter/Outputvideo/outputvideo.mp4"
 
-
-# 檢查點是否在多邊形內的函數
-def point_in_polygon(point, polygon):
-    x, y = point
-    n = len(polygon)
-    inside = False
-    p1x, p1y = polygon[0]
-    for i in range(n + 1):
-        p2x, p2y = polygon[i % n]
-        if min(p1y, p2y) < y <= max(p1y, p2y):
-            if x <= max(p1x, p2x):
-                if p1y != p2y:
-                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                if p1x == p2x or x <= xinters:
-                    inside = not inside
-        p1x, p1y = p2x, p2y
-    return inside
-
-next_vehicle_id = 0 # 全局變量，用於生成唯一ID
-class Vehicle:
+next_vehicle_id = 0  # 全局變量，用於生成唯一ID
+class KalmanTracker:
     def __init__(self, position):
         global next_vehicle_id
         self.id = next_vehicle_id  # 唯一識別ID
         next_vehicle_id += 1
-        self.positions = deque(maxlen=10) # 保存最近10個位置
+
+        # 初始化卡爾曼濾波器
+        self.kalman = cv2.KalmanFilter(4, 2)  # 狀態向量維度4 (x, y, dx, dy)，觀測向量維度2 (x, y)
+        
+        # 定義狀態轉移矩陣 A
+        self.kalman.transitionMatrix = np.array([[1, 0, 1, 0],
+                                                [0, 1, 0, 1],
+                                                [0, 0, 1, 0],
+                                                [0, 0, 0, 1]], dtype=np.float32)
+        
+        # 定義觀測矩陣 H
+        self.kalman.measurementMatrix = np.array([[1, 0, 0, 0],
+                                                [0, 1, 0, 0]], dtype=np.float32)
+        
+        # 初始化狀態協方差矩陣 P
+        self.kalman.processNoiseCov = np.eye(4, dtype=np.float32) * 0.03  # 假設過程噪聲很小
+        self.kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 1  # 假設觀測噪聲
+        
+        # 設置初始狀態
+        self.kalman.statePre = np.array([[position[0]], [position[1]], [0], [0]], dtype=np.float32)
+        self.kalman.statePost = np.array([[position[0]], [position[1]], [0], [0]], dtype=np.float32)
+
+        # 初始化最近位置保存的deque
+        self.positions = deque(maxlen=10)
         self.update_position(position)
         self.counted = set()  # 用集合記錄已經被計數的區間
         self.last_count_time = {}  # 記錄每個區域的最後計數時間
         self.last_seen = time.time()
 
+    def predict(self):
+        # 進行卡爾曼預測
+        prediction = self.kalman.predict()
+        return int(prediction[0]), int(prediction[1])
+
     def update_position(self, new_position):
+        # 使用觀測更新卡爾曼濾波器
+        self.kalman.correct(np.array([[np.float32(new_position[0])], [np.float32(new_position[1])]]))
         self.positions.append(new_position)
         self.last_seen = time.time()
 
@@ -46,22 +59,7 @@ class Vehicle:
                 int(sum(y for x, y in self.positions) / len(self.positions)))
 
 
-# 新增：用於分割可能包含多輛車的大型邊界框的函數
-def split_large_bbox(x, y, w, h, max_ratio=0.5, min_width=50):
-    """
-    分割可能包含多輛車的大型邊界框
-    max_ratio: 最大允許的寬高比
-    min_width: 分割後的最小寬度
-    """
-    if w / h > max_ratio:
-        num_splits = int(w / h / max_ratio) + 1
-        split_width = max(w // num_splits, min_width)
-        return [(x + i * split_width, y, split_width, h) for i in range(num_splits)]
-    return [(x, y, w, h)]
-
-def vehicle_count(video_path, output_path, output_mode='binary'):
-    
-    # 定義偵測區間 [1左上, 2左下, 3右下, 4右上]  # 第一點一定要在"左上"，且按照順序
+def vehicle_count(video_path, output_path, output_mode='original'):
     detection_zones = [
         {"coords": [(9, 286),(0, 350),(180, 336),(179, 273)], "color": (100, 100, 255), "count": 0},    # 0 桃色區間(路肩)
         {"coords": [(179, 273),(180, 336),(343, 321),(315, 262)], "color": (255, 150, 0), "count": 0},  # 1 藍色區間
@@ -69,30 +67,28 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
         {"coords": [(476, 249),(532, 302),(650, 289),(579, 242)], "color": (0, 255, 255), "count": 0},  # 3 黃色區間
         {"coords": [(579, 242),(650, 289),(807, 272),(719, 226)], "color": (0, 165, 255), "count": 0},  # 4 橙色區間
         ]
-        
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print("無法開啟影片")
         return
     
-    # 影片輸出設置
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-    # 根據輸出模式決定輸出的影片
     if output_mode == "original" :
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
     elif output_mode == "binary":
         out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height), isColor=False)
     
-    vehicles = {}
+    trackers = {}  # 使用卡爾曼濾波器追蹤的車輛
     total_count = 0  # 添加總計數變量
     cooldown_time = 0.5  # 冷卻時間 (秒)
     time_window = 0.4   # __秒內認為是同一輛車
     
-    background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True) # 背景減法
+    background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)  # 背景減法
     zone_recent_vehicles = [{} for _ in detection_zones]  # 每個區域最近檢測到的車輛ID
 
     while True:
@@ -118,15 +114,10 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
             if cv2.contourArea(contour) > 1000:  # 閾值調整
                 # 計算邊界框
                 x, y, w, h = cv2.boundingRect(contour)
-                
-                # 新增：分割可能包含多輛車的大型邊界框
-                bboxes = split_large_bbox(x, y, w, h)
-                
-                for bbox in bboxes:
-                    x, y, w, h = bbox
+
 
                 # 使用邊界框的中心點
-                cx, cy = x + w // 2, y + h // 2
+                cx, cy = x + w // 2, y + h // 2  
                 
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
@@ -214,7 +205,7 @@ def vehicle_count(video_path, output_path, output_mode='binary'):
             break
 
     cap.release()  # 釋放相機資源
-    out.release()  # 釋放儲存影像資源 
+    out.release()  # 釋放儲存影像資源
     cv2.destroyAllWindows()
     
     return [zone["count"] for zone in detection_zones], total_count
